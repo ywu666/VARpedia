@@ -8,19 +8,45 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ProgressBar;
-import javafx.scene.control.Slider;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.layout.Region;
 
 public class CreateController {
 	
 	@FXML TextField creationName;
-	@FXML Slider slider;
 	@FXML ProgressBar progressBar;
 	
+	@FXML ImageView image1;
+	@FXML ImageView image2;
+	@FXML ImageView image3;
+	@FXML ImageView image4;
+	@FXML ImageView image5;
+	@FXML ImageView image6;
+	@FXML ImageView image7;
+	@FXML ImageView image8;
+	@FXML ImageView image9;
+	@FXML ImageView image10;
+	
+	
+	@FXML CheckBox box1;
+	@FXML CheckBox box2;
+	@FXML CheckBox box3;
+	@FXML CheckBox box4;
+	@FXML CheckBox box5;
+	@FXML CheckBox box6;
+	@FXML CheckBox box7;
+	@FXML CheckBox box8;
+	@FXML CheckBox box9;
+	@FXML CheckBox box10;
+	
+	private int numImages;
+	
 	private Boolean creating = false;
-	private Creation creation;
+	private NewCreation newCreation;
 	
 	@FXML
 	private void handleMenu() {
@@ -38,7 +64,7 @@ public class CreateController {
 					FXMLLoader loader = new FXMLLoader(getClass().getResource("resources/Menu.fxml"));
 					Parent root = loader.load();
 					MenuController controller = loader.getController();
-					controller.setUpMenu();
+					controller.setUpTable();
 					Main.setStage(root);
 					
 				} catch (IOException e) {
@@ -50,7 +76,7 @@ public class CreateController {
 				FXMLLoader loader = new FXMLLoader(getClass().getResource("resources/Menu.fxml"));
 				Parent root = loader.load();
 				MenuController controller = loader.getController();
-				controller.setUpMenu(creation.getCreationName());
+				controller.setUpMenu(newCreation.getCreationName());
 				Main.setStage(root);
 				
 			} catch (IOException e) {
@@ -63,70 +89,113 @@ public class CreateController {
 	private void handleCreate() {
 		String name = creationName.getText().trim();
 		
-		if (!name.matches("^[a-zA-Z0-9_-]+$")) { // Checks creation name only uses specific characters
-			  Alert alert = new Alert(Alert.AlertType.WARNING, "Please enter a name for your creation using only " +
-			        "alphabetical letters, digits, hyphens and underscores.", ButtonType.OK);
-			  alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
-			  alert.showAndWait();
-			
-		} else if (newTermExists(name)) { // Handle when creation name exists already, check if they want to overwrite
+		if (Creation.checkExists(name)) { // Handle when creation name exists already, check if they want to overwrite
 			Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "You already have a creation with this name.\n" +
 					"Would you like to overwrite?", ButtonType.YES, ButtonType.CANCEL);
 			alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
 			
 			alert.showAndWait().ifPresent(response -> {
 				if (response == ButtonType.YES) { // If they want to overwrite create the creation
-					String command = "rm -f creations/" + name + ".mp4";
-					BashCommand removeCreation = new BashCommand(command);
-					removeCreation.run();
 					
-					creation.setCreationName(name);
+					Creation.removeCreation(name);
+					
+					newCreation.setCreationName(name);
 					handleCreate();
 				}
 			});
 			
+		} else if ("".equals(name)) {
+			Alert alertEmpty = new Alert(Alert.AlertType.WARNING, "Please enter a name for your creation.", ButtonType.OK);
+			alertEmpty.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
+			alertEmpty.showAndWait();
+			
 		} else { // If creation name is valid, make the creation
-			creation.setNumImages(slider.getValue());
-			creation.setCreationName(name);
 			
-			CreateCreationTask task = new CreateCreationTask(creation);
-			Thread thread = new Thread(task);
-			thread.start();
-			
-			creating = true;
-			progressBar.progressProperty().bind(task.progressProperty());
-			task.setOnSucceeded((event) -> {
-				progressBar.progressProperty().unbind();
-				progressBar.setProgress(1);
+			selectedImages();
+			if(numImages == 0){ //alert user if they didn't selecte any images
+				Alert alertEmpty = new Alert(Alert.AlertType.WARNING, "Please selected images.", ButtonType.OK);
+				alertEmpty.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
+				alertEmpty.showAndWait();
 				
-				BashCommand rmNewTermDir = new BashCommand("rm -r .newTerm");
-		    	rmNewTermDir.run();
-		    	
-		    	// Alert user creation is ready, then return to menu
-		    	Alert alert = new Alert(Alert.AlertType.INFORMATION, "Your creation, " + name + " is now ready.", ButtonType.OK);
-				alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
-				alert.showAndWait();
-				  
-		    	try {
-					FXMLLoader loader = new FXMLLoader(getClass().getResource("resources/Menu.fxml"));
-					Parent root = loader.load();
-					MenuController controller = loader.getController();
-					controller.setUpMenu();
-					Main.setStage(root);
+			}else{
+				newCreation.setNumImages(numImages);
+				newCreation.setCreationName(name);
+				
+				CreateCreationTask task = new CreateCreationTask(newCreation);
+				Thread thread = new Thread(task);
+				thread.start();
+				
+				creating = true;
+				progressBar.progressProperty().bind(task.progressProperty());
+				task.setOnSucceeded((event) -> {
+					progressBar.progressProperty().unbind();
+					progressBar.setProgress(1);
 					
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			});
+					BashCommand rmNewTermDir = new BashCommand("rm -r .newTerm");
+			    	rmNewTermDir.run();
+			    	
+			    	// Alert user creation is ready, then return to menu
+			    	Alert alert = new Alert(Alert.AlertType.INFORMATION, "Your creation, " + name + " is now ready.", ButtonType.OK);
+					alert.getDialogPane().setMinHeight(Region.USE_PREF_SIZE);
+					alert.showAndWait();
+					  
+			    	try {
+						FXMLLoader loader = new FXMLLoader(getClass().getResource("resources/Menu.fxml"));
+						Parent root = loader.load();
+						MenuController controller = loader.getController();
+						controller.setUpTable();
+						Main.setStage(root);
+						
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				});
+				
+				
+			}
+			
 		}
 	}
 	
-	private Boolean newTermExists(String name) {
-		File file = new File("creations/" + name + ".mp4");
-		return file.exists();
+	public void initialiseCreateController(NewCreation creation) {
+		this.newCreation = creation;
+		setImageView(image1,0);
+		setImageView(image2,1);
+		setImageView(image3,2);
+		setImageView(image4,3);
+		setImageView(image5,4);
+		setImageView(image6,5);
+		setImageView(image7,6);
+		setImageView(image8,7);
+		setImageView(image9,8);
+		setImageView(image10,9);
 	}
 	
-	public void initialiseCreateController(Creation creation) {
-		this.creation = creation;
+	public void setImageView(ImageView imageView,int num) {
+		File fileUrl = new File(".newTerm/images/" + num +".jpg");
+	    Image image = new Image(fileUrl.toURI().toString());
+	    imageView.setImage(image);
+	}
+
+	public void selected(CheckBox box,int num) {
+		if(box.isSelected()) {
+			numImages++;
+			String command ="cp .newTerm/images/"+num+".jpg .newTerm/selectedImages/"+num+".jpg" ;
+			BashCommand bash = new BashCommand(command);
+			bash.run();
+		}
+	}
+
+	public void selectedImages() {
+		selected(box1,0);
+		selected(box2,1);
+		selected(box3,2);
+		selected(box4,3);
+		selected(box5,4);
+		selected(box6,5);
+		selected(box7,6);
+		selected(box8,7);
+		selected(box9,8);
+		selected(box10,9);
 	}
 }

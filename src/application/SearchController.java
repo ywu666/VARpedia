@@ -35,7 +35,7 @@ public class SearchController {
 			FXMLLoader loader = new FXMLLoader(getClass().getResource("resources/Menu.fxml"));
 			Parent root = loader.load();
 			MenuController controller = loader.getController();
-			controller.setUpMenu();
+			controller.setUpTable();
 			Main.setStage(root);
 			
 		} catch (IOException e) {
@@ -79,6 +79,12 @@ public class SearchController {
 			ExecutorService executorService = Executors.newSingleThreadExecutor();
 			executorService.execute(task);
 			executorService.shutdown();
+			
+			// download the images of the search term
+			DownloadImagesTask task2 = new DownloadImagesTask(searchTerm);
+			ExecutorService executorService2 = Executors.newSingleThreadExecutor();
+			executorService2.execute(task2);
+			executorService2.shutdown();
 		}
 	}
 	
@@ -93,7 +99,7 @@ public class SearchController {
 			alertInvalid.showAndWait();
 			
 		} else {
-			Creation creation = new Creation(searchTerm, results.getText());
+			NewCreation creation = new NewCreation(searchTerm, results.getText());
 		
 			try {
 				FXMLLoader loader = new FXMLLoader(getClass().getResource("resources/Speech.fxml"));
